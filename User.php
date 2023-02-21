@@ -21,24 +21,44 @@
             $this->db_password = $db_password;
             $this->dbname = $dbname;
             $this->tbname = $tbname;
-            $this->conn = new mysqli($this->server_name, $this->username, $this->db_password, $this->dbname);
-        }
 
-        public function register($login, $password, $email, $firstname, $lastname) {
+            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+            $this->conn = new mysqli($this->server_name, $this->username, $this->db_password, $this->dbname);
             if($this->conn->connect_error) {
                 die("Echec de la connexion : ". $this->conn->connect_error);
             }
+        }
 
-            $data = [$login, $password, $email, $firstname, $lastname];
+        public function register($login, $password, $email, $firstname, $lastname) {
             $sql = "INSERT INTO ".$this->tbname."(login, password, email, firstname, lastname) VALUES(?, ?, ?, ?, ?)";
             $request = $this->conn->prepare($sql);
 
-            if($request->execute($data) === TRUE) {
+            if($request->execute([$login, $password, $email, $firstname, $lastname]) === TRUE) {
                 $last_id = $this->conn->insert_id;
                 return $this->conn->query("SELECT * FROM ".$this->tbname." WHERE id = $last_id")->fetch_object();
             } else {
                 echo "Error: " . $sql . "<br>" . $this->conn->error;
             }
         }
+
+        public function connect($login, $password) {
+            $sql = "SELECT * FROM ".$this->tbname." WHERE login = ? && password = ?";
+            $request = $this->conn->prepare($sql);
+            $request->bind_param("ss", ...[$login, $password]);
+            $request->execute();
+
+            $result = $request->get_result();
+            $row = $result->fetch_assoc();
+
+            return $row;
+        }
+
+
+        /* -------------------- Getters ------------------- */
+
     }
 
+
+$model = new User();
+$user = $model->connect("dev", "bvb");
+print_r ($user["login"]);
