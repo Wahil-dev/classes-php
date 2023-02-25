@@ -1,7 +1,7 @@
 <?php
     class User {
         private $id;
-        protected $login;
+        public $login;
         protected $password;
         protected $email;
         protected $firstname;
@@ -48,17 +48,59 @@
             $request->execute();
 
             $result = $request->get_result();
-            $row = $result->fetch_assoc();
+            $row = $result->fetch_assoc(); //tableaux
+
+            // affecter les valeurs sur les propriétes
+            $this->setData($row);
 
             return $row;
         }
 
 
+
+
         /* -------------------- Getters ------------------- */
+        protected function get_table_name() {
+            return "utilisateurs";
+        }
+
+        public function getLogin() {
+            return $this->login;
+        }
+
+        public function getEmail() {
+            return $this->email;
+        }
+
+        public function getFirstname() {
+            return $this->firstname;
+        }
+
+        public function getLastname() {
+            return $this->lastname;
+        }
+
+        public function getAllData() {
+            $data = ["login" => $this->login, "password" => $this->password, "email" => $this->email, "firstname" => $this->firstname, "lastname" => $this->lastname];
+
+            return $data;
+        }
+
+
+
+
+        /* -------------------- Setters ------------------- */
+        protected function setData($properties) {
+            foreach($properties as $property => $value) {
+                $this->$property = $value;
+            }
+        }
 
     }
 
+    $user = new User();
+    $user->register(login: "dev", email: 'wahil@bvb.bvb', password: 'bvb', firstname: 'wahil', lastname: 'chettouf');
 
-$model = new User();
-$user = $model->connect("dev", "bvb");
-print_r ($user["login"]);
+    $data_user = $user->connect(login: "dev", password: 'bvb');
+
+    var_dump($user->getAllData());
