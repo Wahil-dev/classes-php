@@ -9,13 +9,11 @@
         protected $firstname;
         protected $lastname;
         
+        protected $tbname = "utilisateurs";
         protected $cnx;
 
-
-        protected $tbname = "utilisateurs";
-
         public function __construct() {
-            $this->cnx = new Cnx();
+            $this->cnx = (new Cnx())->getConn();
         }
 
         public static function register($login, $password, $email, $firstname, $lastname) {
@@ -69,7 +67,7 @@
         }
 
         public function delete() {
-            $request = $this->cnx->getConn()->prepare("DELETE FROM ".$this->get_table_name()." WHERE id = $this->id");
+            $request = $this->cnx->prepare("DELETE FROM ".$this->get_table_name()." WHERE id = $this->id");
             $request->execute();
 
             // pour vider les propriétes de calss
@@ -120,12 +118,14 @@
 
     }
 
+    //User::register(login: "dev", password: 'bvb', email: "bvb@bvb", firstname: "wahil", lastname: "chettouf");
+
     $user = User::connect(login: "dev", password: 'bvb');
 
-    if($user) {
+    if(isset($user) && $user) {
         var_dump($user->getLastname());
         $user->delete();
-        var_dump($user->getLastname());
+        unset($user);
     } else {
         echo "identifiant error ";
     }
