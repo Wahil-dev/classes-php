@@ -17,7 +17,6 @@
         }
 
         public static function register($login, $password, $email, $firstname, $lastname) {
-            global $cnx;
             $cnx = new Cnx();
             $sql = "INSERT INTO ".User::get_table_name()."(login, password, email, firstname, lastname) VALUES(?, ?, ?, ?, ?)";
             $request = $cnx->getConn()->prepare($sql);
@@ -55,27 +54,15 @@
             session_start();
             session_unset();
             session_destroy();
-
-            // pour vider les propriétes de calss
-            $this->emptyTheObjectProperty();
         }
 
-        public function emptyTheObjectProperty() {
-            foreach($this->getAllInfos() as $property => $value) {
-                $this->$property = null;
-            }
-        }
 
         public function delete() {
             $request = $this->cnx->prepare("DELETE FROM ".$this->get_table_name()." WHERE id = $this->id");
             $request->execute();
 
-            // pour vider les propriétes de calss
-            $this->emptyTheObjectProperty();
             return $request;
         }
-
-
 
 
         /* -------------------- Getters ------------------- */
@@ -124,8 +111,7 @@
 
     if(isset($user) && $user) {
         var_dump($user->getLastname());
-        $user->delete();
-        unset($user);
+        
     } else {
         echo "identifiant error ";
     }
