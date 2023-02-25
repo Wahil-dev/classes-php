@@ -1,4 +1,6 @@
 <?php
+    require_once("db.php");
+
     class User {
         private $id;
         public $login;
@@ -6,61 +8,80 @@
         protected $email;
         protected $firstname;
         protected $lastname;
+        
+        protected $cnx;
 
-        protected $server_name;
-        protected $username;
-        protected $db_password;
-        protected $dbname;
-        protected $tbname;
-        protected $conn;
 
-        public function __construct($server_name = "localhost", $username = "root", $db_password = "", $dbname = "classes", $tbname = "utilisateurs")
-        {
-            $this->server_name = $server_name;
-            $this->username = $username;
-            $this->db_password = $db_password;
-            $this->dbname = $dbname;
-            $this->tbname = $tbname;
+        protected $tbname = "utilisateurs";
 
-            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-            $this->conn = new mysqli($this->server_name, $this->username, $this->db_password, $this->dbname);
-            if($this->conn->connect_error) {
-                die("Echec de la connexion : ". $this->conn->connect_error);
-            }
+        public function __construct() {
+            $this->cnx = new Cnx();
         }
 
-        public function register($login, $password, $email, $firstname, $lastname) {
-            $sql = "INSERT INTO ".$this->tbname."(login, password, email, firstname, lastname) VALUES(?, ?, ?, ?, ?)";
-            $request = $this->conn->prepare($sql);
+        public static function register($login, $password, $email, $firstname, $lastname) {
+            global $cnx;
+            $cnx = new Cnx();
+            $sql = "INSERT INTO ".User::get_table_name()."(login, password, email, firstname, lastname) VALUES(?, ?, ?, ?, ?)";
+            $request = $cnx->getConn()->prepare($sql);
 
             if($request->execute([$login, $password, $email, $firstname, $lastname]) === TRUE) {
-                $last_id = $this->conn->insert_id;
-                return $this->conn->query("SELECT * FROM ".$this->tbname." WHERE id = $last_id")->fetch_object();
+                $last_id = $cnx->getConn()->insert_id;
+                return $cnx->getConn()->query("SELECT * FROM ".User::get_table_name()." WHERE id = $last_id")->fetch_object();
             } else {
-                echo "Error: " . $sql . "<br>" . $this->conn->error;
+                echo "Error: " . $sql . "<br>" . $cnx->getConn()->error;
             }
         }
 
-        public function connect($login, $password) {
-            $sql = "SELECT * FROM ".$this->tbname." WHERE login = ? && password = ?";
-            $request = $this->conn->prepare($sql);
+        public static function connect($login, $password) {
+            $cnx = new Cnx();
+            $sql = "SELECT * FROM ".User::get_table_name()." WHERE login = ? && password = ?";
+            $request = $cnx->getConn()->prepare($sql);
             $request->bind_param("ss", ...[$login, $password]);
             $request->execute();
 
             $result = $request->get_result();
             $row = $result->fetch_assoc(); //tableaux
 
-            // affecter les valeurs sur les propriétes
-            $this->setData($row);
+            if($result->num_rows == 0) {
+                return false;
+            }
 
-            return $row;
+            $_SESSION["user"] = $row;
+            $user = new User();
+            // affecter les valeurs aux propriétes
+            $user->setData($row);
+            return $user;
+        }
+
+        public function desconnect() {
+            session_start();
+            session_unset();
+            session_destroy();
+
+            // pour vider les propriétes de calss
+            $this->emptyTheObjectProperty();
+        }
+
+        public function emptyTheObjectProperty() {
+            foreach($this->getAllInfos() as $property => $value) {
+                $this->$property = null;
+            }
+        }
+
+        public function delete() {
+            $request = $this->cnx->getConn()->prepare("DELETE FROM ".$this->get_table_name()." WHERE id = $this->id");
+            $request->execute();
+
+            // pour vider les propriétes de calss
+            $this->emptyTheObjectProperty();
+            return $request;
         }
 
 
 
 
         /* -------------------- Getters ------------------- */
-        protected function get_table_name() {
+        protected static function get_table_name() {
             return "utilisateurs";
         }
 
@@ -80,7 +101,7 @@
             return $this->lastname;
         }
 
-        public function getAllData() {
+        public function getAllInfos() {
             $data = ["login" => $this->login, "password" => $this->password, "email" => $this->email, "firstname" => $this->firstname, "lastname" => $this->lastname];
 
             return $data;
@@ -96,11 +117,15 @@
             }
         }
 
+
     }
 
-    $user = new User();
-    $user->register(login: "dev", email: 'wahil@bvb.bvb', password: 'bvb', firstname: 'wahil', lastname: 'chettouf');
+    $user = User::connect(login: "dev", password: 'bvb');
 
-    $data_user = $user->connect(login: "dev", password: 'bvb');
-
-    var_dump($user->getAllData());
+    if($user) {
+        var_dump($user->getLastname());
+        $user->delete();
+        var_dump($user->getLastname());
+    } else {
+        echo "identifiant error ";
+    }
