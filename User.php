@@ -60,6 +60,7 @@
         public function delete() {
             $request = $this->cnx->prepare("DELETE FROM ".$this->get_table_name()." WHERE id = $this->id");
             $request->execute();
+            $this->desconnect();
 
             return $request;
         }
