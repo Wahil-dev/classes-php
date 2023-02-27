@@ -12,6 +12,8 @@
         protected $tbname = "utilisateurs";
         protected $cnx;
 
+        
+
         public function __construct() {
             $this->cnx = (new Cnx())->getConn();
         }
@@ -43,7 +45,7 @@
                 return false;
             }
 
-            $_SESSION["user"] = $row;
+            
             $user = new User();
             // affecter les valeurs aux propriétes
             $user->setData($row);
@@ -51,9 +53,13 @@
         }
 
         public function desconnect() {
-            session_start();
             session_unset();
             session_destroy();
+
+            // effacer le quand tu mit unser($user)
+            foreach($this->getAllInfos() as $property => $value) {
+                $this->$property = null;
+            }
         }
 
 
@@ -65,6 +71,13 @@
             return $request;
         }
 
+        public function isConnected() {
+            return $this->id != null;
+        }
+
+        protected function loguer() {
+            $_SESSION["user"] = $this->getAllInfos();
+        }
 
         /* -------------------- Getters ------------------- */
         protected static function get_table_name() {
@@ -88,7 +101,7 @@
         }
 
         public function getAllInfos() {
-            $data = ["login" => $this->login, "password" => $this->password, "email" => $this->email, "firstname" => $this->firstname, "lastname" => $this->lastname];
+            $data = ["id" => $this->id, "login" => $this->login, "password" => $this->password, "email" => $this->email, "firstname" => $this->firstname, "lastname" => $this->lastname];
 
             return $data;
         }
@@ -108,11 +121,40 @@
 
     //User::register(login: "dev", password: 'bvb', email: "bvb@bvb", firstname: "wahil", lastname: "chettouf");
 
-    $user = User::connect(login: "dev", password: 'bvb');
-
-    if(isset($user) && $user) {
-        var_dump($user->getLastname());
-        
-    } else {
-        echo "identifiant error ";
+    if(isset($_SESSION["user"])) {
+        $session = $_SESSION["user"];
+        var_dump($session["login"]);
     }
+
+
+    if(isset($_POST["dec"])) {
+        $_SESSION["user"]->desconnect();
+        header("refresh:0; URL:bvb.html");
+    }
+
+    if(isset($_POST["con"])) {
+        $user = User::connect(login: "dev", password: 'bvb');
+        $_SESSION["user"] = $user;
+    }
+
+
+    // if(isset($user) && $user) {
+    //     echo($user->getLastname());
+    //     echo "<br>";
+
+    //     if($user->isConnected()) {
+    //         echo "vous etez connecter";
+    //     } else {
+    //         echo "vous etez pas connecter";
+    //     }
+        
+    // } else {
+    //     echo "identifiant error ";
+    // }
+
+?>
+
+<form action="" method="post">
+    <input type="submit" name='con' value="connecter">
+    <input type="submit" name='dec' value="deconnexion">
+</form>
