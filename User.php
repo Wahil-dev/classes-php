@@ -96,6 +96,15 @@
             $_SESSION["user"] = $this->getAllInfos();
         }
 
+        public function update($login, $password, $email, $firstname, $lastname) {
+            $sql = "UPDATE ".User::get_table_name()." SET login = ? , password = ? , email = ? , firstname = ? , lastname = ? WHERE id = ?";
+
+            $request = $this->cnx->prepare($sql);
+            $request->execute([$login, $password, $email, $firstname, $lastname, $this->id]);
+
+            return $request;
+        }
+
         /* -------------------- Getters ------------------- */
         protected static function get_table_name() {
             return "utilisateurs";
@@ -138,14 +147,25 @@
 
     $user = new User();
 
-    //$user->register(login: "dev", password: 'bvb', email: "bvb@bvb", firstname: "wahil", lastname: "chettouf");
+    //$user->register(login: "dev", password: '4', email: "44444444444@bvb", firstname: "4444444", lastname: "4444444444");
 
     $user->connect(login: "dev", password: 'bvb');
     echo "<br>";
+    
+    var_dump($user->getLastname());
 
-    $user->delete();
+    echo "<br>";
 
-    var_dump($user->isConnected());
+    //var_dump($user->update(login: "dev", password: 'bvb', email: "bvb@bvb", firstname: "wahil", lastname: "bb77777777777777777777bbbbb"));
+
+    //$user->delete();
+
+    //var_dump($user->isConnected());
+    echo "<br>";
+
+    var_dump($user->getLastname());
+    
+    echo "<br>";
 
 
 ?>
