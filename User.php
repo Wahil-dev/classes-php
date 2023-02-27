@@ -1,6 +1,4 @@
 <?php
-    require_once("db.php");
-
     class User {
         private $id;
         public $login;
@@ -10,31 +8,48 @@
         protected $lastname;
         
         protected $tbname = "utilisateurs";
+
+        protected $server_name;
+        protected $username;
+        protected $db_password;
+        protected $dbname;
         protected $cnx;
 
-        
+        public function __construct($server_name = "localhost", $username = "root", $db_password = "", $dbname = "classes") {
+            session_start();
 
-        public function __construct() {
-            $this->cnx = (new Cnx())->getConn();
+            $this->server_name = $server_name;
+            $this->username = $username;
+            $this->db_password = $db_password;
+            $this->dbname = $dbname;
+
+            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+            $conn = new mysqli($this->server_name, $this->username, $this->db_password, $this->dbname);
+            if($conn->connect_error) {
+                die("Echec de la connexion : ". $conn->connect_error);
+            }
+
+            $this->cnx = $conn;
         }
 
-        public static function register($login, $password, $email, $firstname, $lastname) {
-            $cnx = new Cnx();
+        public function register($login, $password, $email, $firstname, $lastname) {
             $sql = "INSERT INTO ".User::get_table_name()."(login, password, email, firstname, lastname) VALUES(?, ?, ?, ?, ?)";
-            $request = $cnx->getConn()->prepare($sql);
+            $request = $this->cnx->prepare($sql);
 
             if($request->execute([$login, $password, $email, $firstname, $lastname]) === TRUE) {
-                $last_id = $cnx->getConn()->insert_id;
-                return $cnx->getConn()->query("SELECT * FROM ".User::get_table_name()." WHERE id = $last_id")->fetch_object();
+                echo 'user créer';
+
+                $last_id = $this->cnx->insert_id;
+                return $this->cnx->query("SELECT * FROM ".User::get_table_name()." WHERE id = $last_id")->fetch_object();
             } else {
-                echo "Error: " . $sql . "<br>" . $cnx->getConn()->error;
+                echo "Error: " . $sql . "<br>" . $this->cnx->error;
             }
         }
 
-        public static function connect($login, $password) {
-            $cnx = new Cnx();
+        public function connect($login, $password) {
             $sql = "SELECT * FROM ".User::get_table_name()." WHERE login = ? && password = ?";
-            $request = $cnx->getConn()->prepare($sql);
+            $request = $this->cnx->prepare($sql);
             $request->bind_param("ss", ...[$login, $password]);
             $request->execute();
 
@@ -45,11 +60,13 @@
                 return false;
             }
 
-            
-            $user = new User();
+            // set session user
+            $this->loguer();
+            echo "user connecter";
+
             // affecter les valeurs aux propriétes
-            $user->setData($row);
-            return $user;
+            $this->setData($row);
+            return $row;
         }
 
         public function desconnect() {
@@ -119,42 +136,16 @@
 
     }
 
-    //User::register(login: "dev", password: 'bvb', email: "bvb@bvb", firstname: "wahil", lastname: "chettouf");
+    $user = new User();
 
-    if(isset($_SESSION["user"])) {
-        $session = $_SESSION["user"];
-        var_dump($session["login"]);
-    }
+    //$user->register(login: "dev", password: 'bvb', email: "bvb@bvb", firstname: "wahil", lastname: "chettouf");
 
+    $user->connect(login: "dev", password: 'bvb');
+    echo "<br>";
 
-    if(isset($_POST["dec"])) {
-        $_SESSION["user"]->desconnect();
-        header("refresh:0; URL:bvb.html");
-    }
+    $user->delete();
 
-    if(isset($_POST["con"])) {
-        $user = User::connect(login: "dev", password: 'bvb');
-        $_SESSION["user"] = $user;
-    }
+    var_dump($user->isConnected());
 
-
-    // if(isset($user) && $user) {
-    //     echo($user->getLastname());
-    //     echo "<br>";
-
-    //     if($user->isConnected()) {
-    //         echo "vous etez connecter";
-    //     } else {
-    //         echo "vous etez pas connecter";
-    //     }
-        
-    // } else {
-    //     echo "identifiant error ";
-    // }
 
 ?>
-
-<form action="" method="post">
-    <input type="submit" name='con' value="connecter">
-    <input type="submit" name='dec' value="deconnexion">
-</form>
